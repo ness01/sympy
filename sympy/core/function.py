@@ -85,6 +85,14 @@ class Application(Basic):
 
     nargs = None
 
+    @classmethod
+    def should_evalf(cls, arg):
+        if arg.is_Real:
+            return True
+        #re, im = arg.as_real_imag()
+        #return re.is_Real or im.is_Real
+        return False
+
     @cacheit
     def __new__(cls, *args, **options):
         args = map(sympify, args)
@@ -103,7 +111,10 @@ class Application(Basic):
             r = super(Application, cls).__new__(cls, *args, **options)
             r.nargs = len(args)
             return r
-        return super(Application, cls).__new__(cls, *args, **options)
+        r = super(Application, cls).__new__(cls, *args, **options)
+        if cls.nargs > 0 and cls.should_evalf(args[0]):
+            return r.evalf()
+        return r
 
     @classmethod
     def eval(cls, *args):
