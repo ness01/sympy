@@ -89,9 +89,10 @@ class Application(Basic):
     def should_evalf(cls, arg):
         if arg.is_Real:
             return True
-        #re, im = arg.as_real_imag()
-        #return re.is_Real or im.is_Real
-        return False
+        if not arg.is_Add:
+            return False
+        re, im = arg.as_real_imag()
+        return re.is_Real or im.is_Real
 
     @cacheit
     def __new__(cls, *args, **options):

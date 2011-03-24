@@ -253,3 +253,8 @@ def test_doit():
     d = Derivative(f, x)
     assert d.doit() == 12
     assert d.doit(deep = False) == d
+
+def test_evalf_default():
+    assert type(sin(4.0)) == Real
+    assert type(sin(4)) == sin
+    assert type(sin(Rational(1,4))) == sin
