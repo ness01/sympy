@@ -256,5 +256,7 @@ def test_doit():
 
 def test_evalf_default():
     assert type(sin(4.0)) == Real
+    assert type(re(sin(I + 1.0))) == Real
+    assert type(im(sin(I + 1.0))) == Real
     assert type(sin(4)) == sin
     assert type(sin(Rational(1,4))) == sin
