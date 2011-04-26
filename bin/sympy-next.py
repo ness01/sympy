@@ -49,16 +49,26 @@ def read_branchfile(f):
 
 def run_tests():
     logit("Running unit tests.")
-    out = subprocess.Popen(["./bin/test"], stdout=subprocess.PIPE).communicate()[0]
-
-    # echo to log
-    print >> log, out
-    log.flush()
+    out = subprocess.Popen(["./bin/test"], stdout=subprocess.PIPE).stdout
 
     report = []
-    # process output
-    lines = out.split('sympy/')
-    for line in lines:
+    def my_join(file):
+        while True:
+            char = file.read(1)
+            if not char:
+                break
+            log.write(char)
+            log.flush()
+            yield char
+    def my_split(iter):
+        buf = ''
+        for c in iter:
+            buf += c
+            if buf.endswith('sympy/'):
+                r = buf[:-6]
+                buf = ''
+                yield r
+    for line in my_split(my_join(out)):
         good = None
         if line.endswith('[OK]\n'):
             good = True
