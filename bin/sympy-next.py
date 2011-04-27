@@ -34,9 +34,12 @@ import time
 import subprocess
 import pickle
 
+verbose = True
 def logit(message):
     print >> log, '>', message
     log.flush()
+    if verbose:
+        print '>', message
 
 def read_branchfile(f):
     ret = []
@@ -59,6 +62,8 @@ def run_tests():
                 break
             log.write(char)
             log.flush()
+            if verbose:
+                sys.stdout.write(char)
             yield char
     def my_split(iter):
         buf = ''
@@ -92,32 +97,54 @@ def do_test(branches, name):
     gitn("checkout master", "checkout", "master")
     gitn("reset tree", "reset", "--hard")
     gitn("pull master", "pull", branches[0][0], branches[0][1])
-    if git("switch to temporary branch", "checkout", "-b", name):
-        logit("Stale test branch?")
-        gitn("delete stale temporary branch", "branch", "-D", name)
-        gitn("switch to temporary branch", "checkout", "-b", name)
 
-    # now try and fetch all other branches
+    todo = branches[1:]
     report = []
-    for source, branch in branches[1:]:
-        logit("Merging branch %s from %s." % (branch, source))
-        if git("Fetching branch " + branch, "fetch", source, branch):
-            logit("Error fetching branch -- skipping.")
-            report.append((source, branch, "fetch"))
-            continue
-        if git("Merge branch " + branch, "merge", "FETCH_HEAD"):
-            gitn("Error merging branch %s -- skipping." % branch,
-                 "merge", "--abort")
-            report.append((source, branch, "merge"))
-            continue
-        report.append((source, branch, "clean"))
+    tests = []
 
-    # run the tests
-    tests = run_tests()
+    i = 0
+    while len(todo):
+        if git("switch to temporary branch", "checkout", "-b", name):
+            logit("Stale test branch?")
+            gitn("delete stale temporary branch", "branch", "-D", name)
+            gitn("switch to temporary branch", "checkout", "-b", name)
 
-    # delete our temporary branch
-    gitn("switch back to master", "checkout", "master")
-    gitn("delete temporary branch", "branch", "-D", name)
+        # now try and fetch all other branches
+        first = True
+        cantest = False
+        br = todo[:]
+        todo = []
+        for source, branch in br:
+            logit("Merging branch %s from %s." % (branch, source))
+            if git("Fetching branch " + branch, "fetch", source, branch):
+                logit("Error fetching branch -- skipping.")
+                report.append((source, branch, "fetch", None))
+                continue
+            if git("Merge branch " + branch, "merge", "FETCH_HEAD"):
+                gitn("Error merging branch %s -- skipping." % branch,
+                     "merge", "--abort")
+                if first:
+                    logit('Cannot merge into master -- dropping.')
+                    report.append((source, branch, "merge", None))
+                else:
+                    todo.append((source, branch))
+                continue
+            first = False
+            cantest = True
+            report.append((source, branch, "clean", i))
+
+        # run the tests
+        if cantest:
+            tests.append(run_tests())
+        else:
+            assert len(todo) == 0
+
+        # delete our temporary branch
+        gitn("switch back to master", "checkout", "master")
+        gitn("delete temporary branch", "branch", "-D", name)
+
+        # increment counter
+        i += 1
 
     return report, tests
 
@@ -130,7 +157,8 @@ def write_report(reports):
         for u in t[1]:
             allbranches.update([(u[0], u[1])])
         for u in t[2]:
-            alltests.update([u[0]])
+            for v in u:
+                alltests.update([v[0]])
 
     branchtable = {}
     testtable   = {}
@@ -139,11 +167,16 @@ def write_report(reports):
     for test in alltests:
         testtable[test] = {}
 
+    stampnums = {}
     for stamp, branches, tests in reports:
-        for b1, b2, status in branches:
-            branchtable[(b1, b2)][stamp] = status
-        for test, status in tests:
-            testtable[test][stamp] = status
+        for b1, b2, status, info in branches:
+            branchtable[(b1, b2)][stamp] = (status, info)
+        info = 0
+        for l in tests:
+            for test, status in l:
+                testtable[test][(stamp, info)] = status
+            info += 1
+        stampnums[stamp] = info
 
     outf = open('report.html', 'w')
     outf.write('''
@@ -160,17 +193,18 @@ def write_report(reports):
     outf.write('<table border="1">\n')
     outf.write('  <tr>\n')
     outf.write('    <th> </th>\n')
-    for stamp in allstamps:
+    for stamp in stampnums:
         outf.write('    <th> %s </th\n' % stamp)
     outf.write('  </tr>\n')
     for name, branch in sorted(branchtable.iteritems()):
         outf.write('  <tr>\n')
         outf.write('    <th align="left"> %s %s </th>\n' % (name[0], name[1]))
-        for stamp in allstamps:
+        for stamp in stampnums:
             if stamp in branch:
-                if branch[stamp] == 'clean':
-                    outf.write('    <td align="center" bgcolor="#00FF00"> clean </td>\n')
-                elif branch[stamp] == 'merge':
+                status, info = branch[stamp]
+                if status == 'clean':
+                    outf.write('    <td align="center" bgcolor="#00FF00"> clean %d </td>\n' % info)
+                elif status == 'merge':
                     outf.write('    <td align="center" bgcolor="#FF0000"> conflicts </td>\n')
                 else:
                     outf.write('    <td align="center" bgcolor="#FFFF00"> fetch </td>\n')
@@ -183,20 +217,22 @@ def write_report(reports):
     outf.write('<table border="1">\n')
     outf.write('  <tr>\n')
     outf.write('    <th> </th>\n')
-    for stamp in allstamps:
-        outf.write('    <th> %s </th\n' % stamp)
+    for stamp, num in stampnums.iteritems():
+        for i in range(num):
+            outf.write('    <th> %s-%d </th\n' % (stamp, i))
     outf.write('  </tr>\n')
     for name, test in sorted(testtable.iteritems()):
         outf.write('  <tr>\n')
         outf.write('    <th align="left"> %s </th>\n' % name)
-        for stamp in allstamps:
-            if stamp in test:
-                if test[stamp]:
-                    outf.write('    <td align="center" bgcolor="#00FF00"> OK </td>\n')
+        for stamp, num in stampnums.iteritems():
+            for i in range(num):
+                if (stamp, i) in test:
+                    if test[(stamp, i)]:
+                        outf.write('    <td align="center" bgcolor="#00FF00"> OK </td>\n')
+                    else:
+                        outf.write('    <td align="center" bgcolor="#FF0000"> FAIL </td>\n')
                 else:
-                    outf.write('    <td align="center" bgcolor="#FF0000"> FAIL </td>\n')
-            else:
-                outf.write('    <td align="center"> N/A </td>\n')
+                    outf.write('    <td align="center"> N/A </td>\n')
         outf.write('  </tr>\n')
     outf.write('</table>\n')
 
@@ -223,37 +259,38 @@ def create_report(merges, tests, stamp):
 
 # MAIN PROGRAM
 
-if len(sys.argv) == 2:
-    os.chdir(sys.argv[1])
-    write_report(pickle.load(open(picklef, 'rb')))
-    sys.exit(0)
+if __name__ == '__main__':
+    if len(sys.argv) == 2:
+        os.chdir(sys.argv[1])
+        write_report(pickle.load(open(picklef, 'rb')))
+        sys.exit(0)
 
-if len(sys.argv) != 4:
-    print >> sys.stderr, "Usage: %s repo branches out-dir" % sys.argv[0]
-    sys.exit(1)
+    if len(sys.argv) != 4:
+        print >> sys.stderr, "Usage: %s repo branches out-dir" % sys.argv[0]
+        sys.exit(1)
 
-repo       = os.path.abspath(sys.argv[1])
-branchfile = os.path.abspath(sys.argv[2])
-outdir     = os.path.abspath(sys.argv[3])
+    repo       = os.path.abspath(sys.argv[1])
+    branchfile = os.path.abspath(sys.argv[2])
+    outdir     = os.path.abspath(sys.argv[3])
 
-# create us a timestamp
-tm = time.localtime(time.time())
-stamp = "%s%s%s%s%s" % (tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min)
+    # create us a timestamp
+    tm = time.localtime(time.time())
+    stamp = "%s%s%s%s%s" % (tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min)
 
-# create out dir if necessary
-if not os.path.exists(outdir):
-    os.mkdir(outdir)
+    # create out dir if necessary
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
 
-# we will log all output to here
-log = open(os.path.join(outdir, stamp), 'w')
+    # we will log all output to here
+    log = open(os.path.join(outdir, stamp), 'w')
 
-# find out which branches to test
-branches = read_branchfile(branchfile)
+    # find out which branches to test
+    branches = read_branchfile(branchfile)
 
-# do the merging and testing
-os.chdir(repo)
-merges, tests = do_test(branches, "next-test")
+    # do the merging and testing
+    os.chdir(repo)
+    merges, tests = do_test(branches, "next-test")
 
-# create a report
-os.chdir(outdir)
-create_report(merges, tests, stamp)
+    # create a report
+    os.chdir(outdir)
+    create_report(merges, tests, stamp)
