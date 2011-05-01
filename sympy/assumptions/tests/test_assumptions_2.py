@@ -1,6 +1,7 @@
 """rename this to test_assumptions.py when the old assumptions system is deleted"""
 from sympy.core import symbols
-from sympy.assumptions import Assume, global_assumptions, Predicate
+from sympy.assumptions import (Assume, get_local_assumptions,
+    set_local_assumptions, ask, Q, AssumptionsContext, Predicate)
 from sympy.assumptions.assume import eliminate_assume
 from sympy.printing import pretty
 from sympy.assumptions.ask import Q
@@ -50,17 +51,33 @@ def test_eliminate_assumptions():
     assert eliminate_assume(Assume(x, a) | Assume(x, b)) == a | b
     assert eliminate_assume(Assume(x, a) | Assume(x, b, False)) == a | ~b
 
-def test_global():
-    """Test for global assumptions"""
-    x, y = symbols('x,y')
-    global_assumptions.add(Assume(x>0))
-    assert Assume(x>0) in global_assumptions
-    global_assumptions.remove(Assume(x>0))
-    assert not Assume(x>0) in global_assumptions
-    # same with multiple of assumptions
-    global_assumptions.add(Assume(x>0), Assume(y>0))
-    assert Assume(x>0) in global_assumptions
-    assert Assume(y>0) in global_assumptions
-    global_assumptions.clear()
-    assert not Assume(x>0) in global_assumptions
-    assert not Assume(y>0) in global_assumptions
+def test_context():
+    x, y = symbols('x y')
+    a = AssumptionsContext()
+    a.add(Assume(x>0))
+    assert Assume(x>0) in a
+    a.remove(Assume(x>0))
+    assert not Assume(x>0) in a
+    # multiple assumptions
+    a.add(Assume(x>0), Assume(y>0))
+    assert Assume(x>0) in a
+    assert Assume(y>0) in a
+    a.clear()
+    assert not Assume(x>0) in a
+    assert not Assume(y>0) in a
+
+def test_local():
+    x, y = symbols('x y')
+    set_local_assumptions()
+    a = get_local_assumptions()
+    a.add(Assume(x, Q.positive))
+    def localfunc():
+        assert Assume(x, Q.positive) in get_local_assumptions()
+        assert ask(x, Q.positive) == True
+        b = set_local_assumptions()
+        assert not b is a
+        b.add(Assume(x, Q.negative))
+        assert ask(x, Q.positive) == False
+    localfunc()
+    assert a
+    assert ask(x, Q.positive) == True

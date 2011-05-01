@@ -2,7 +2,8 @@
 import inspect
 from sympy.core import sympify
 from sympy.utilities.source import get_class
-from sympy.assumptions import global_assumptions, Assume, Predicate
+from sympy.assumptions import get_local_assumptions, AssumptionsContext, \
+                              Predicate
 from sympy.assumptions.assume import eliminate_assume
 from sympy.logic.boolalg import to_cnf, And, Not, Or, Implies, Equivalent
 from sympy.logic.inference import satisfiable
@@ -59,7 +60,7 @@ def eval_predicate(predicate, expr, assumptions=True):
     return res
 
 
-def ask(expr, key, assumptions=True, context=global_assumptions, disable_preprocessing=False):
+def ask(expr, key, assumptions=True, disable_preprocessing=False):
     """
     Method for inferring properties about objects.
 
@@ -92,7 +93,11 @@ def ask(expr, key, assumptions=True, context=global_assumptions, disable_preproc
     expr = sympify(expr)
     if type(key) is not Predicate:
         key = getattr(Q, str(key))
-    assumptions = And(assumptions, And(*context))
+
+    local_assumptions = get_local_assumptions()
+    if local_assumptions is None:
+        local_assumptions = AssumptionsContext()
+    assumptions = And(assumptions, And(*local_assumptions))
 
     # direct resolution method, no logic
     if not disable_preprocessing:

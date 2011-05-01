@@ -1,12 +1,9 @@
-from sympy.utilities.pytest import raises, XFAIL
-
 from sympy.core import Symbol, symbols, S, Rational, Integer, I, pi, oo
-from sympy.functions import exp, log, sin, cos, sign, re, im, sqrt, Abs
-from sympy.assumptions import (Assume, global_assumptions, Q, ask,
-    register_handler, remove_handler, AssumptionsContext)
+from sympy.functions import exp, log, sin, cos, sign, re, im, sqrt
+from sympy.assumptions import (Assume, set_local_assumptions, get_local_assumptions,
+                               Q, ask, register_handler, remove_handler)
 from sympy.assumptions.handlers import AskHandler
-from sympy.assumptions.ask import (compute_known_facts,
-                                   known_facts_cnf, known_facts_dict)
+from sympy.utilities.pytest import raises, XFAIL
 
 def test_int_1():
     z = 1
@@ -377,7 +374,7 @@ def test_I():
     assert ask(z, Q.composite)        == False
 
 def test_bounded():
-    x, y = symbols('x,y')
+    x, y = symbols('x y')
     assert ask(x, Q.bounded) == False
     assert ask(x, Q.bounded, Assume(x, Q.bounded)) == True
     assert ask(x, Q.bounded, Assume(y, Q.bounded)) == False
@@ -436,7 +433,7 @@ def test_bounded_xfail():
 def test_commutative():
     """By default objects are Q.commutative that is why it returns True
     for both key=True and key=False"""
-    x, y = symbols('x,y')
+    x, y = symbols('x y')
     assert ask(x, Q.commutative) == True
     assert ask(x, Q.commutative, Assume(x, Q.commutative, False)) == False
     assert ask(x, Q.commutative, Assume(x, Q.complex)) == True
@@ -457,7 +454,7 @@ def test_commutative():
     assert ask(log(x), Q.commutative) == True
 
 def test_complex():
-    x, y = symbols('x,y')
+    x, y = symbols('x y')
     assert ask(x, Q.complex) == None
     assert ask(x, Q.complex, Assume(x, Q.complex)) == True
     assert ask(x, Q.complex, Assume(y, Q.complex)) == None
@@ -527,12 +524,12 @@ def test_complex():
     assert ask(exp(x), Q.complex) == True
 
     # Q.complexes
-    assert ask(Abs(x), Q.complex) == True
+    assert ask(abs(x), Q.complex) == True
     assert ask(re(x),  Q.complex) == True
     assert ask(im(x),  Q.complex) == True
 
 def test_even():
-    x, y, z, t = symbols('x,y,z,t')
+    x, y, z, t = symbols('x y z t')
     assert ask(x, Q.even) == None
     assert ask(x, Q.even, Assume(x, Q.integer)) == None
     assert ask(x, Q.even, Assume(x, Q.integer, False)) == False
@@ -568,8 +565,8 @@ def test_even():
     assert ask(x+y+z+t, Q.even, Assume(x, Q.odd) & Assume(y, Q.odd) & \
                      Assume(z, Q.even) & Assume(t, Q.integer)) == None
 
-    assert ask(Abs(x), Q.even, Assume(x, Q.even)) == True
-    assert ask(Abs(x), Q.even, Assume(x, Q.even, False)) == None
+    assert ask(abs(x), Q.even, Assume(x, Q.even)) == True
+    assert ask(abs(x), Q.even, Assume(x, Q.even, False)) == None
     assert ask(re(x),  Q.even, Assume(x, Q.even)) == True
     assert ask(re(x),  Q.even, Assume(x, Q.even, False)) == None
     assert ask(im(x),  Q.even, Assume(x, Q.even)) == True
@@ -584,7 +581,7 @@ def test_extended_real():
     assert ask(x+S.Infinity, Q.extended_real, Assume(x, Q.real)) == True
 
 def test_rational():
-    x, y = symbols('x,y')
+    x, y = symbols('x y')
     assert ask(x, Q.rational, Assume(x, Q.integer)) == True
     assert ask(x, Q.rational, Assume(x, Q.irrational)) == False
     assert ask(x, Q.rational, Assume(x, Q.real)) == None
@@ -631,7 +628,7 @@ def test_rational():
         Assume(y, Q.rational)) == False
 
 def test_imaginary():
-    x, y, z = symbols('x,y,z')
+    x, y, z = symbols('x y z')
     I = S.ImaginaryUnit
     assert ask(x, Q.imaginary) == None
     assert ask(x, Q.imaginary, Assume(x, Q.real)) == False
@@ -664,7 +661,7 @@ def test_imaginary():
                      Assume(y, Q.imaginary) & Assume(z, Q.imaginary)) == False
 
 def test_infinitesimal():
-    x, y = symbols('x,y')
+    x, y = symbols('x y')
     assert ask(x, Q.infinitesimal) == None
     assert ask(x, Q.infinitesimal, Assume(x, Q.infinitesimal)) == True
 
@@ -699,7 +696,7 @@ def test_integer():
     assert ask(x/3, Q.integer, Assume(x, Q.even)) == None
 
 def test_negative():
-    x, y = symbols('x,y')
+    x, y = symbols('x y')
     assert ask(x, Q.negative, Assume(x, Q.negative)) == True
     assert ask(x, Q.negative, Assume(x, Q.positive)) == False
     assert ask(x, Q.negative, Assume(x, Q.real, False)) == False
@@ -737,10 +734,10 @@ def test_negative():
     assert ask(x**y, Q.negative, Assume(x, Q.positive) & \
                      Assume(y, Q.integer)) == False
 
-    assert ask(Abs(x), Q.negative) == False
+    assert ask(abs(x), Q.negative) == False
 
 def test_nonzero():
-    x, y = symbols('x,y')
+    x, y = symbols('x y')
     assert ask(x, Q.nonzero) == None
     assert ask(x, Q.nonzero, Assume(x, Q.real)) == None
     assert ask(x, Q.nonzero, Assume(x, Q.positive)) == True
@@ -758,11 +755,11 @@ def test_nonzero():
     assert ask(x*y, Q.nonzero, Assume(x, Q.nonzero)) == None
     assert ask(x*y, Q.nonzero, Assume(x, Q.nonzero) & Assume(y, Q.nonzero)) == True
 
-    assert ask(Abs(x), Q.nonzero) == None
-    assert ask(Abs(x), Q.nonzero, Assume(x, Q.nonzero)) == True
+    assert ask(abs(x), Q.nonzero) == None
+    assert ask(abs(x), Q.nonzero, Assume(x, Q.nonzero)) == True
 
 def test_odd():
-    x, y, z, t = symbols('x,y,z,t')
+    x, y, z, t = symbols('x y z t')
     assert ask(x, Q.odd) == None
     assert ask(x, Q.odd, Assume(x, Q.odd)) == True
     assert ask(x, Q.odd, Assume(x, Q.integer)) == None
@@ -808,10 +805,10 @@ def test_odd():
     assert ask(2*x*y, Q.odd, Assume(x, Q.rational) & Assume(x, Q.rational)) == None
     assert ask(2*x*y, Q.odd, Assume(x, Q.irrational) & Assume(x, Q.irrational)) == None
 
-    assert ask(Abs(x), Q.odd, Assume(x, Q.odd)) == True
+    assert ask(abs(x), Q.odd, Assume(x, Q.odd)) == True
 
 def test_prime():
-    x, y = symbols('x,y')
+    x, y = symbols('x y')
     assert ask(x, Q.prime, Assume(x, Q.prime)) == True
     assert ask(x, Q.prime, Assume(x, Q.prime, False)) == False
     assert ask(x, Q.prime, Assume(x, Q.integer)) == None
@@ -829,7 +826,7 @@ def test_prime():
                      Assume(y, Q.integer)) == False
 
 def test_positive():
-    x, y, z, w = symbols('x,y,z,w')
+    x, y, z, w = symbols('x y z w')
     assert ask(x, Q.positive, Assume(x, Q.positive)) == True
     assert ask(x, Q.positive, Assume(x, Q.negative)) == False
     assert ask(x, Q.positive, Assume(x, Q.nonzero)) == None
@@ -857,15 +854,15 @@ def test_positive():
     assert ask(x + exp(x), Q.positive, Assume(x, Q.real)) == None
 
     #absolute value
-    assert ask(Abs(x), Q.positive) == None # Abs(0) = 0
-    assert ask(Abs(x), Q.positive, Assume(x, Q.positive)) == True
+    assert ask(abs(x), Q.positive) == None # abs(0) = 0
+    assert ask(abs(x), Q.positive, Assume(x, Q.positive)) == True
 
 @XFAIL
 def test_positive_xfail():
     assert ask(1/(1 + x**2), Q.positive, Assume(x, Q.real)) == True
 
 def test_real():
-    x, y = symbols('x,y')
+    x, y = symbols('x y')
     assert ask(x, Q.real) == None
     assert ask(x, Q.real, Assume(x, Q.real)) == True
     assert ask(x, Q.real, Assume(x, Q.nonzero)) == True
@@ -938,48 +935,16 @@ def test_algebraic():
 
     assert ask(2.47, 'algebraic') == False
 
-def test_global():
-    """Test ask with global assumptions"""
+def test_local():
+    """Test ask with local assumptions"""
     x = symbols('x')
+    set_local_assumptions()
+    a = get_local_assumptions()
     assert ask(x, Q.integer) == None
-    global_assumptions.add(Assume(x, Q.integer))
+    a.add(Assume(x, Q.integer))
     assert ask(x, Q.integer) == True
-    global_assumptions.clear()
+    a.clear()
     assert ask(x, Q.integer) == None
-
-def test_custom_context():
-    """Test ask with custom assumptions context"""
-    x = symbols('x')
-    assert ask(x, Q.integer) == None
-    local_context = AssumptionsContext()
-    local_context.add(Assume(x, Q.integer))
-    assert ask(x, Q.integer, context = local_context) == True
-    assert ask(x, Q.integer) == None
-
-def test_functions_in_assumptions():
-    from sympy.logic.boolalg import Equivalent, Xor
-    x = symbols('x')
-    assert ask(x, Q.negative, Q.real(x) >> Q.positive(x)) is False
-    assert ask(x, Q.negative, Equivalent(Q.real(x), Q.positive(x))) is False
-    assert ask(x, Q.negative, Xor(Q.real(x), Q.negative(x))) is False
-
-def test_is_true():
-    from sympy.logic.boolalg import Equivalent, Implies
-    x = symbols('x')
-    assert ask(True, Q.is_true) is True
-    assert ask(~Q.negative(x), Q.is_true, Q.positive(x)) is True
-    assert ask(~Q.real(x), Q.is_true, Q.commutative(x)) is None
-    assert ask(Q.negative(x) & Q.integer(x), Q.is_true, Q.positive(x)) is False
-    assert ask(Q.negative(x) & Q.integer(x), Q.is_true) is None
-    assert ask(Q.real(x) | Q.integer(x), Q.is_true, Q.positive(x)) is True
-    assert ask(Q.real(x) | Q.integer(x), Q.is_true) is None
-    assert ask(Q.real(x) >> Q.positive(x), Q.is_true, Q.negative(x)) is False
-    assert ask(Implies(Q.real(x), Q.positive(x), evaluate=False), Q.is_true,
-                    Q.negative(x)) is False
-    assert ask(Implies(Q.real(x), Q.positive(x), evaluate=False), Q.is_true) is None
-    assert ask(Equivalent(Q.integer(x), Q.even(x)), Q.is_true, Q.even(x)) is True
-    assert ask(Equivalent(Q.integer(x), Q.even(x)), Q.is_true) is None
-    assert ask(Equivalent(Q.positive(x), Q.integer(x)), Q.is_true, Q.integer(x)) is None
 
 def test_incompatible_resolutors():
     x = symbols('x')
@@ -1034,9 +999,3 @@ def test_type_extensibility():
     register_handler(Q.prime, MyAskHandler)
     assert ask(a, Q.prime) == True
 
-def test_compute_known_facts():
-    ns = {}
-    exec 'from sympy.logic.boolalg import And, Or, Not' in globals(), ns
-    exec compute_known_facts() in globals(), ns
-    assert ns['known_facts_cnf'] == known_facts_cnf
-    assert ns['known_facts_dict'] == known_facts_dict
