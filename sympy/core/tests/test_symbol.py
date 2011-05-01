@@ -1,5 +1,5 @@
 from sympy import (Symbol, Wild, Inequality, StrictInequality, pi, I, Rational,
-    sympify, symbols, Dummy, S)
+    sympify, symbols, Dummy, S, Q, ask)
 
 from sympy.utilities.pytest import raises
 
@@ -223,3 +223,13 @@ def test_symbols():
 def test_call():
     f = Symbol('f')
     assert f(2)
+
+def test_new_assumptions():
+    x = Symbol('x', positive=True)
+    y = Symbol('y')
+    assert ask(x, Q.positive)
+    assert ask(y, Q.positive) is None
+    def localf():
+        y = Symbol('y', negative=True)
+        assert ask(y, Q.positive) is False
+    assert ask(y, Q.positive) is None

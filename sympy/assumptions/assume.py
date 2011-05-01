@@ -27,7 +27,8 @@ class AssumptionsContext(set):
     def add(self, *assumptions):
         """Add an assumption."""
         for a in assumptions:
-            assert type(a) is Assume, 'can only store instances of Assume'
+            assert type(a) is Assume or \
+                   type(a) is Not, 'can only store instances of Assume'
             super(AssumptionsContext, self).add(a)
 
 LOCALCONTEXT = '__sympy_local_assumptions'
@@ -77,7 +78,9 @@ def push_local_assumptions(go_back=0):
 
     f = f.f_back
     here = f
-    r = AssumptionsContext()
+    r = f.f_locals.get(LOCALCONTEXT)
+    if r is None:
+        r = AssumptionsContext()
     while f.f_back is not None:
         f = f.f_back
         ctx = f.f_locals.get(LOCALCONTEXT)
@@ -100,7 +103,7 @@ class Assume(Boolean):
 
     """
     def __new__(cls, expr, predicate=None, value=True):
-        from sympy import Q
+        from sympy.assumptions.ask import Q
         if predicate is None:
             predicate = Q.is_true
         elif not isinstance(predicate, Predicate):

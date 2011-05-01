@@ -130,9 +130,9 @@ def ask(expr, key, assumptions=True, disable_preprocessing=False):
                     if Not(key) in known_facts_dict[assum]:
                         return False
                 elif assum.func is Not and assum.args[0].is_Atom:
-                    if key in known_facts_dict[assum]:
+                    if key in known_facts_dict[assum.args[0]]:
                         return False
-                    if Not(key) in known_facts_dict[assum]:
+                    if Not(key) in known_facts_dict[assum.args[0]]:
                         return True
         elif assumptions.func is Not and assumptions.args[0].is_Atom:
             if assumptions.args[0] in known_facts_dict[key]:

@@ -10,6 +10,17 @@ from sympy.logic.boolalg import Boolean
 
 import re
 
+_possible_assumptions = None # set of possible assumptions
+def _dict2assumptions(expr, assumptions):
+    """dict with assumptions about expr -> combination of Assume objects
+
+    >>> _dict2assumptions(x, {'integer':True, 'positive':True})
+    [Assume(x, 'integer', True), Assume(x, 'positive', True)]
+    """
+    assert assumptions, 'got no assumption'
+    from sympy.assumptions import Assume
+    return [Assume(expr, a, b) for a, b in assumptions.iteritems()]
+
 class Symbol(AtomicExpr, Boolean):
     """
     Assumptions::
@@ -31,7 +42,7 @@ class Symbol(AtomicExpr, Boolean):
 
     is_Symbol = True
 
-    def __new__(cls, name, commutative=True, **assumptions):
+    def __new__(cls, name, commutative=True, ctx=None, **assumptions):
         """Symbols are identified by name and commutativity::
 
         >>> from sympy import Symbol
@@ -64,6 +75,28 @@ class Symbol(AtomicExpr, Boolean):
 
     __xnew__       = staticmethod(__new_stage2__)            # never cached (e.g. dummy)
     __xnew_cached_ = staticmethod(cacheit(__new_stage2__))   # symbols are always cached
+
+    def __init__(self, name=None, commutative=True, ctx=None, **assumptions):
+        """Initialise assumptions"""
+        # TODO this should probably be in basic.
+        if ctx is None:
+            from sympy.assumptions import push_local_assumptions
+            ctx = push_local_assumptions(1)
+
+        # register new-style assumptions
+        # remove kwargs which are not assumptions
+        assumptions['commutative'] = commutative
+        global _possible_assumptions
+        if _possible_assumptions is None:
+            from sympy.assumptions import Q
+            _possible_assumptions = set(q for q in dir(Q) if not q.startswith('_'))
+        for r in assumptions.copy().iterkeys():
+            if r not in _possible_assumptions:
+                del assumptions[r]
+        if assumptions:
+            # add assumptions to local scope (not to an outer scope)
+            # make sure not to overwrite assumptions
+            ctx.add(*_dict2assumptions(self, assumptions))
 
     def __getnewargs__(self):
         return (self.name, self.is_commutative)
@@ -119,7 +152,7 @@ class Dummy(Symbol):
 
     is_Dummy = True
 
-    def __new__(cls, name=None, commutative=True, **assumptions):
+    def __new__(cls, name=None, commutative=True, ctx=None, **assumptions):
         if name is None:
             name = str(Dummy._count)
 
@@ -141,7 +174,7 @@ class Wild(Symbol):
 
     is_Wild = True
 
-    def __new__(cls, name, exclude=None, properties=None, **assumptions):
+    def __new__(cls, name, exclude=None, properties=None, ctx=None, **assumptions):
         if type(exclude) is list:
             exclude = tuple(exclude)
         if type(properties) is list:
@@ -288,6 +321,9 @@ def symbols(names, **args):
     if isinstance(names, basestring):
         names = _re_var_split.split(names)
 
+        if not 'ctx' in args:
+            from sympy.assumptions import push_local_assumptions
+            args['ctx'] = push_local_assumptions(1)
         cls = args.pop('cls', Symbol)
         seq = args.pop('seq', False)
 
@@ -385,6 +421,10 @@ def var(names, **args):
                 frame.f_globals[symbol.__name__] = symbol
             else:
                 traverse(symbol, frame)
+
+    if not 'ctx' in args:
+        from sympy.assumptions import push_local_assumptions
+        args['ctx'] = push_local_assumptions(1)
 
     from inspect import currentframe
     frame = currentframe().f_back
