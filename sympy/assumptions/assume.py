@@ -32,6 +32,8 @@ class AssumptionsContext(set):
 
 LOCALCONTEXT = '__sympy_local_assumptions'
 
+# TODO these functions should explicitely del the frame
+
 def set_local_assumptions():
     """Set a local assumption context and return it.
 
@@ -59,6 +61,30 @@ def get_local_assumptions():
         if result is not None:
             return result
     return None
+
+def push_local_assumptions(go_back=0):
+    """Create a local assumptions context that inherits all
+       parent assumptions.
+
+       go_back can be used to inject assumptions in parent scope"""
+    f = inspect.currentframe()
+
+    for i in range(go_back):
+        f = f.f_back
+        r = f.f_locals.get(LOCALCONTEXT)
+        if r is not None:
+            raise RuntimeError('Local context found too early!')
+
+    f = f.f_back
+    here = f
+    r = AssumptionsContext()
+    while f.f_back is not None:
+        f = f.f_back
+        ctx = f.f_locals.get(LOCALCONTEXT)
+        if ctx is not None:
+            r = r.union(ctx)
+    here.f_locals[LOCALCONTEXT] = r
+    return r
 
 class Assume(Boolean):
     """New-style assumptions.

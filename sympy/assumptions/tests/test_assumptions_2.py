@@ -1,7 +1,8 @@
 """rename this to test_assumptions.py when the old assumptions system is deleted"""
 from sympy.core import symbols
 from sympy.assumptions import (Assume, get_local_assumptions,
-    set_local_assumptions, ask, Q, AssumptionsContext, Predicate)
+    set_local_assumptions, push_local_assumptions, ask,
+    Q, AssumptionsContext, Predicate)
 from sympy.assumptions.assume import eliminate_assume
 from sympy.printing import pretty
 from sympy.assumptions.ask import Q
@@ -81,3 +82,27 @@ def test_local():
     localfunc()
     assert a
     assert ask(x, Q.positive) == True
+
+def test_push():
+    x, y = symbols('x y')
+    a = push_local_assumptions()
+    a.add(Assume(x, Q.positive))
+    assert ask(x, Q.positive) == True
+
+    def lf1():
+        b = push_local_assumptions()
+        assert ask(x, Q.positive) == True
+        b.add(Assume(y, Q.positive))
+        assert ask(y, Q.positive) == True
+    lf1()
+    assert ask(x, Q.positive) == True
+    assert ask(y, Q.positive) is None
+
+    def lf2():
+        b = get_local_assumptions()
+        assert ask(x, Q.positive) == True
+        b.add(Assume(y, Q.positive))
+        assert ask(y, Q.positive) == True
+    lf2()
+    assert ask(x, Q.positive) == True
+    assert ask(y, Q.positive) == True
