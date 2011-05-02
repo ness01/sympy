@@ -224,7 +224,11 @@ def test_call():
     f = Symbol('f')
     assert f(2)
 
+t = Symbol('t', positive=True)
 def test_new_assumptions():
+    from sympy.assumptions import get_local_assumptions
+    print get_local_assumptions()
+    assert ask(t, Q.positive) == True
     x = Symbol('x', positive=True)
     y = Symbol('y')
     assert ask(x, Q.positive)
