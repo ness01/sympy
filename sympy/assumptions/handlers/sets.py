@@ -181,7 +181,8 @@ class AskRealHandler(CommonHandler):
 
     @staticmethod
     def _number(expr, assumptions):
-        return not expr.as_real_imag()[1]
+        from sympy import I
+        return expr.as_independent(I)[1] != 1
 
     @staticmethod
     def Add(expr, assumptions):

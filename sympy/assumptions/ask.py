@@ -42,6 +42,7 @@ def eval_predicate(predicate, expr, assumptions=True):
     for handler in predicate.handlers:
         cls = get_class(handler)
         for subclass in mro:
+            #print cls, subclass
             try:
                 eval = getattr(cls, subclass.__name__)
             except AttributeError:

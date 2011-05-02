@@ -11,6 +11,7 @@ from sympy.logic.boolalg import Boolean
 import re
 
 _possible_assumptions = None # set of possible assumptions
+_alternative_assumptions = None
 def _dict2assumptions(expr, assumptions):
     """dict with assumptions about expr -> combination of Assume objects
 
@@ -19,7 +20,17 @@ def _dict2assumptions(expr, assumptions):
     """
     assert assumptions, 'got no assumption'
     from sympy.assumptions import Assume
-    return [Assume(expr, a, b) for a, b in assumptions.iteritems()]
+    def f(a, b):
+        if a == 'zero':
+            return ~Assume(expr, Q.nonzero, b)
+        elif a == 'nonzero':
+            return Assume(expr, Q.nonzero, b)
+        elif a in _alternative_assumptions:
+            return ~Assume(expr, a[3:], b)
+        else:
+            assert a in _possible_assumptions
+            return Assume(expr, a, b)
+    return [f(a, b) for a, b in assumptions.iteritems()]
 
 class Symbol(AtomicExpr, Boolean):
     """
@@ -89,12 +100,15 @@ class Symbol(AtomicExpr, Boolean):
         # register new-style assumptions
         # remove kwargs which are not assumptions
         assumptions['commutative'] = commutative
-        global _possible_assumptions
+        global _possible_assumptions, _alternative_assumptions
         if _possible_assumptions is None:
             from sympy.assumptions import Q
             _possible_assumptions = set(q for q in dir(Q) if not q.startswith('_'))
+            _alternative_assumptions = set('non' + q for q in dir(Q) if not q.startswith('_'))
+            _alternative_assumptions.remove('nonnonzero')
+            _alternative_assumptions.add('zero')
         for r in assumptions.copy().iterkeys():
-            if r not in _possible_assumptions:
+            if r not in _possible_assumptions and not r in _alternative_assumptions:
                 del assumptions[r]
         if assumptions:
             # add assumptions to local scope (not to an outer scope)

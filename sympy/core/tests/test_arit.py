@@ -80,6 +80,8 @@ def test_div():
     assert e == (1+-b)*((-1)+b)**(-1)
 
 def test_pow():
+    from sympy.assumptions import get_local_assumptions
+    print get_local_assumptions()
     n1 = Rational(1)
     n2 = Rational(2)
     n5 = Rational(5)

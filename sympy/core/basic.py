@@ -7,6 +7,18 @@ from core import BasicMeta, BasicType, C
 from sympify import _sympify, sympify, SympifyError
 from compatibility import any, all
 
+def make_new_is_k(k):
+    prop = make__get_assumption('Basic', k)
+    def new_is_k(self):
+        from sympy.assumptions import Q, ask
+        r1 = prop(self)
+        if hasattr(Q, k):
+           r2 = ask(self, getattr(Q, k))
+           return r2
+           if r2 != r1:
+               print self, k, r1, r2
+        return r1
+    return new_is_k
 
 class Basic(AssumeMeths):
     """
@@ -182,6 +194,7 @@ class Basic(AssumeMeths):
 
     # here is what we do instead:
     for k in AssumeMeths._assume_defined:
+        #exec "is_%s  = property(make_new_is_k('%s'))" % (k, k)
         exec "is_%s  = property(make__get_assumption('Basic', '%s'))" % (k,k)
     del k
 
