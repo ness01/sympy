@@ -24,12 +24,27 @@ class AssumptionsContext(set):
 
     """
 
+    def __init__(self):
+        self.inverse = {}
+
     def add(self, *assumptions):
         """Add an assumption."""
         for a in assumptions:
             assert type(a) is Assume or \
                    type(a) is Not, 'can only store instances of Assume'
             super(AssumptionsContext, self).add(a)
+            for x in a.free_symbols:
+                if x in self.inverse:
+                    self.inverse[x].add(a)
+                else:
+                    self.inverse[x] = set([a])
+
+    def clear_symbol(self, x):
+        if not x in self.inverse:
+            return
+        for a in self.inverse[x]:
+            self.remove(a)
+        del self.inverse[x]
 
 LOCALCONTEXT = '__sympy_local_assumptions'
 
@@ -85,7 +100,7 @@ def push_local_assumptions(go_back=0):
         f = f.f_back
         ctx = f.f_locals.get(LOCALCONTEXT)
         if ctx is not None:
-            r = r.union(ctx)
+            r.add(*ctx)
     here.f_locals[LOCALCONTEXT] = r
     return r
 

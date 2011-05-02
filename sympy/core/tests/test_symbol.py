@@ -233,3 +233,9 @@ def test_new_assumptions():
         y = Symbol('y', negative=True)
         assert ask(y, Q.positive) is False
     assert ask(y, Q.positive) is None
+
+    from sympy.assumptions import get_local_assumptions, Assume
+    get_local_assumptions().add(Assume(y, Q.positive))
+    assert ask(y, Q.positive) == True
+    y = Symbol('y')
+    assert ask(y, Q.positive) is None

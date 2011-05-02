@@ -83,6 +83,9 @@ class Symbol(AtomicExpr, Boolean):
             from sympy.assumptions import push_local_assumptions
             ctx = push_local_assumptions(1)
 
+        # first clear out new-style assumptions
+        ctx.clear_symbol(self)
+
         # register new-style assumptions
         # remove kwargs which are not assumptions
         assumptions['commutative'] = commutative
