@@ -93,6 +93,15 @@ def __cacheit(func):
             k = args + tuple(items)
         else:
             k = args
+        from sympy.assumptions import get_local_assumptions
+        from sympy.core import Basic
+        ctx = get_local_assumptions()
+        if ctx:
+            for s in k:
+                if isinstance(s, Basic):
+                    for x in s.free_symbols:
+                        if x in ctx.inverse:
+                            k += tuple(ctx.inverse[x])
         k = k + tuple(map(lambda x: type(x), k))
         try:
             return func_cache_it_cache[k]
