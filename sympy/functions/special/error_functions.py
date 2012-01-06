@@ -137,6 +137,9 @@ class FresnelIntegral(Function):
         else:
             raise ArgumentIndexError(self, argindex)
 
+    def _eval_is_real(self):
+        return self.args[0].is_real
+
     def _eval_conjugate(self):
         return self.func(self.args[0].conjugate())
 
@@ -181,6 +184,9 @@ class fresnel_S(FresnelIntegral):
 
     def _eval_rewrite_as_erf(self, z):
         return (S.One+I)/4 * (erf((S.One+I)/2*sqrt(pi)*z) - I*erf((S.One-I)/2*sqrt(pi)*z))
+
+    def _eval_nseries(self, x, n, logx):
+        return x**3*(-x**4)**n*(2**(-2*n-1)*pi**(2*n+1))/((4*n+3)*C.factorial(2*n+1))
 
     def _eval_aseries(self, n, args0, x, logx):
         z = self.args[0]
@@ -227,6 +233,9 @@ class fresnel_C(FresnelIntegral):
 
     def _eval_rewrite_as_erf(self, z):
         return (S.One-I)/4 * (erf((S.One+I)/2*sqrt(pi)*z) + I*erf((S.One-I)/2*sqrt(pi)*z))
+
+    def _eval_nseries(self, x, n, logx):
+        return x*(-x**4)**n*(2**(-2*n)*pi**(2*n))/((4*n+1)*C.factorial(2*n))
 
     def _eval_aseries(self, n, args0, x, logx):
         z = self.args[0]
