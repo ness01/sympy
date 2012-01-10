@@ -93,16 +93,19 @@ class erfs(Function):
     tractable for the Gruntz algorithm.
     """
 
+    nargs = 1
+
     def _eval_aseries(self, n, args0, x, logx):
+        from sympy import oo, Add
         if args0[0] != oo:
             return super(erfs, self)._eval_aseries(n, args0, x, logx)
 
         z = self.args[0]
-        l = [ C.factorial(2*k)*(-4)**(-k)/C.factorial(k)*(1/z)**(2*k+1) for k in xrange(1,n) ]
+        l = [ C.factorial(2*k)*(-S(4))**(-k)/C.factorial(k)*(1/z)**(2*k+1) for k in xrange(1,n) ]
 
         # Not sure about the order terms
         o = None
-        if m == 0:
+        if n == 0:
             o = C.Order(1, x)
         else:
             o = C.Order(1/z**(2*n+2), x)
