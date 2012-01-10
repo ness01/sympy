@@ -75,8 +75,8 @@ def add_formulae(formulae):
     # Volume 1, section 6.2
 
     from sympy import (exp, sqrt, cosh, log, asin, atan, I, lowergamma, cos,
-                       atanh, besseli, gamma, erf, pi, sin, besselj)
-    from sympy import polar_lift, exp_polar
+                       atanh, besseli, gamma, erf, pi, sin, besselj, fresnels, fresnelc)
+    from sympy import polar_lift, exp_polar, root
 
     # 0F0
     add((), (), exp(z))
@@ -210,6 +210,14 @@ def add_formulae(formulae):
          Matrix([[b-1, S(1)/2, 0],
                  [z, 0, z],
                  [0, S(1)/2, -b]]))
+
+    # FresnelS
+    #add([S(3)/4], [S(3)/2,S(7)/4], fresnels(root(-16*z/pi**2, 4)) * 6/(pi*(root(-16*z/pi**2, 4))**3) )
+    add([S(3)/4], [S(3)/2,S(7)/4], fresnels(2/sqrt(pi)*root(-z,4)) * 6/(pi*8*(-z)**(S(3)/4)/pi**(S(3)/2) ) )
+
+    # FresnelC
+    #add([S(1)/4], [S(1)/2,S(5)/4], fresnelc(root(-16*z/pi**2, 4)) / (pi*(root(-16*z/pi**2, 4))) )
+    add([S(1)/4], [S(1)/2,S(5)/4], fresnelc(2/sqrt(pi)*root(-z,4)) / (2/sqrt(pi)*root(-z,4)) )
 
     # 2F3
     # XXX with this five-parameter formula is pretty slow with the current

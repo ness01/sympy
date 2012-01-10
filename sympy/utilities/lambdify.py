@@ -44,7 +44,7 @@ MPMATH_TRANSLATIONS = {
     #"uppergamma":"upper_gamma",
     "LambertW":"lambertw",
     "Matrix":"matrix",
-    "conjugate":"conj",
+    "conjugate":"conj"
 }
 
 NUMPY_TRANSLATIONS = {
