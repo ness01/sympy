@@ -213,7 +213,7 @@ def add_formulae(formulae):
 
     # FresnelS
     #add([S(3)/4], [S(3)/2,S(7)/4], fresnels(root(-16*z/pi**2, 4)) * 6/(pi*(root(-16*z/pi**2, 4))**3) )
-    add([S(3)/4], [S(3)/2,S(7)/4], fresnels(2/sqrt(pi)*root(-z,4)) * 6/(pi*8*(-z)**(S(3)/4)/pi**(S(3)/2) ) )
+    add([S(3)/4], [S(3)/2,S(7)/4], fresnels(2/sqrt(pi)*exp(I*pi/4)*root(z, 4))/z**(S(3)/4) *3*sqrt(pi)*exp(-3*pi*I/4)/4)
 
     # FresnelC
     #add([S(1)/4], [S(1)/2,S(5)/4], fresnelc(root(-16*z/pi**2, 4)) / (pi*(root(-16*z/pi**2, 4))) )

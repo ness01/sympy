@@ -94,6 +94,7 @@ class FresnelIntegral(Function):
 
     _trigfunc = None
     _sign = None
+    unbranched = True
 
     @classmethod
     def eval(cls, z):
