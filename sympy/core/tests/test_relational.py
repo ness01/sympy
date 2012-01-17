@@ -1,7 +1,7 @@
 from sympy.utilities.pytest import XFAIL, raises
 from sympy import symbols, oo
-from sympy.core.relational import Relational, Equality, StrictInequality, \
-    Rel, Eq, Lt, Le, Gt, Ge, Ne
+from sympy.core.relational import ( Relational, Equality, GreaterThan,
+    LessThan, StrictGreaterThan, StrictLessThan, Rel, Eq, Lt, Le, Gt, Ge, Ne )
 
 x,y,z = symbols('x,y,z')
 
@@ -18,10 +18,31 @@ def test_rel_subs():
     assert e.lhs == z
     assert e.rhs == y
 
+    e = Relational(x, y, '>=')
+    e = e.subs(x,z)
+
+    assert isinstance(e, GreaterThan)
+    assert e.lhs == z
+    assert e.rhs == y
+
+    e = Relational(x, y, '<=')
+    e = e.subs(x,z)
+
+    assert isinstance(e, LessThan)
+    assert e.lhs == z
+    assert e.rhs == y
+
+    e = Relational(x, y, '>')
+    e = e.subs(x,z)
+
+    assert isinstance(e, StrictGreaterThan)
+    assert e.lhs == z
+    assert e.rhs == y
+
     e = Relational(x, y, '<')
     e = e.subs(x,z)
 
-    assert isinstance(e, StrictInequality)
+    assert isinstance(e, StrictLessThan)
     assert e.lhs == z
     assert e.rhs == y
 
