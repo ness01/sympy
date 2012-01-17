@@ -325,6 +325,11 @@ def _solve_inequality(ie, s):
     from sympy import Poly
     if not ie.rel_op in ('>', '>=', '<', '<='):
         raise NotImplementedError
+    if ie.rel_op == '>':
+        return _solve_inequality(ie.rhs < ie.lhs, s)
+    if ie.rel_op == '>=':
+        return _solve_inequality(ie.rhs <= ie.lhs, s)
+        
     expr = ie.lhs - ie.rhs
     p = Poly(expr, s)
     if p.degree() != 1:
