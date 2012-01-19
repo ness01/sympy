@@ -1,10 +1,11 @@
 from sympy import (symbols, Rational, Symbol, Integral, log, diff, sin, exp,
-    Function, factorial, factorial2, floor, ceiling, Abs, re, im, conjugate, gamma,
+    Function, factorial, factorial2, floor, ceiling, Abs, re, im, conjugate,
     Order, Piecewise, Matrix, asin, Interval, EmptySet, Union, S, Sum,
     Limit, oo, Poly, Float, lowergamma, uppergamma, hyper, meijerg,
     Lambda, Poly, RootOf, RootSum, sqrt, Dict, catalan, Min, Max,
-    cot, coth, re, im, root, arg, zeta, dirichlet_eta, binomial, RisingFactorial,
-    FallingFactorial, polylog, lerchphi, Ei, expint, Si, Ci, Shi, Chi)
+    cot, coth, re, im, root, arg, zeta, dirichlet_eta, binomial,
+    RisingFactorial, FallingFactorial, polylog, lerchphi, Ei, expint, Si, Ci,
+    Shi, Chi, gamma, Tuple)
 from sympy.abc import mu, tau
 from sympy.printing.latex import latex
 from sympy.utilities.pytest import XFAIL, raises
@@ -433,3 +434,18 @@ def test_custom_symbol_names():
     assert latex(x + y, symbol_names={x:"x_i"}) == "x_i + y"
     assert latex(x**2, symbol_names={x:"x_i"}) == "x_i^{2}"
     assert latex(x + y, symbol_names={x:"x_i", y:"y_j"}) == "x_i + y_j"
+
+def test_latex_RandomDomain():
+    from sympy.stats import Normal, Die, Exponential, pspace, Where
+    X = Normal(0, 1, symbol=Symbol('x1'))
+    assert latex(Where(X>0)) == "Domain: 0 < x_{1}"
+
+    D = Die(6, symbol=Symbol('d1'))
+    assert latex(Where(D>4)) == r"Domain: d_{1} = 5 \vee d_{1} = 6"
+
+    A = Exponential(1, symbol=Symbol('a'))
+    B = Exponential(1, symbol=Symbol('b'))
+    assert latex(pspace(Tuple(A,B)).domain) =="Domain: 0 \leq a \wedge 0 \leq b"
+
+
+
