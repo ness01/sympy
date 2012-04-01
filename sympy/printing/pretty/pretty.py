@@ -1393,6 +1393,10 @@ class PrettyPrinter(Printer):
             except:
                 return self._print(None)
 
+    def _print_PolynomialRingElement(self, e):
+        # TODO should incorporate order
+        return self._print(e.as_expr())
+
 def pretty(expr, **settings):
     """Returns a string containing the prettified form of expr.
 
