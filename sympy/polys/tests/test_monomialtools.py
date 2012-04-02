@@ -8,7 +8,7 @@ from sympy.polys.monomialtools import (
     monomial_max, monomial_min,
     monomial_divides,
     Monomial,
-    InverseOrder, ProductOrder
+    InverseOrder, ProductOrder, build_order
 )
 
 from sympy.polys.polyerrors import ExactQuotientFailed
@@ -116,6 +116,15 @@ def test_monomial_key():
 
     raises(ValueError, "monomial_key('foo')")
     raises(ValueError, "monomial_key(1)")
+
+def test_build_order():
+    from sympy.abc import x, y, z, t
+    assert build_order((("grlex", x, y), ("grlex", z, t)), [x, y, z, t]) \
+        ((4, 5, 6, 7)) == ((9, (4, 5)), (13, (6, 7)))
+    assert build_order((("grlex", x, y), ("lex", z, t)), [x, y, z, t],
+        module_asc=True)((17, 4, 5, 6, 7)) == (17, (9, (4, 5)), (6, 7))
+    assert build_order((("ilex", x, y), ("grlex", z, t)), [x, y, z, t],
+        module_asc=False)((17, 4, 5, 6, 7)) == (-17, (-4, -5), (13, (6, 7)))
 
 def test_monomial_mul():
     assert monomial_mul((3,4,1), (1,2,0)) == (4,6,1)

@@ -242,6 +242,48 @@ def monomial_key(order=None):
     else:
         raise ValueError("monomial ordering specification must be a string or a callable, got %s" % order)
 
+def build_order(arg, gens, module_asc=None):
+    """
+    Build a monomial order on ``gens``.
+
+    Arg should be a tuple of iterables, the first element being a string or
+    monomial order (will be passed to monomial_key), the others a subset
+    of the generators. This function will build the corresponding product
+    order.
+
+    If ``module_asc`` is not None, an implicit zeroth generator will be added,
+    corresponding to the module index. The order used for it is lex if
+    ``module_asc=True``, else ilex.
+
+    For example, build a product of two grlex orders:
+
+    >>> from sympy.polys.monomialtools import grlex, build_order
+    >>> from sympy.abc import x, y, z, t
+    >>> O = build_order((("grlex", x, y), ("grlex", z, t)), [x, y, z, t])
+    >>> O((1, 2, 3, 4))
+    ((3, (1, 2)), (7, (3, 4)))
+    """
+    gens2idx = {}
+    gensinc = 0
+    if module_asc is not None:
+        gensinc = 1
+    for i, g in enumerate(gens):
+        gens2idx[g] = i + gensinc
+    order = []
+    if module_asc is True:
+        order = [(lex, lambda x: x[0])]
+    elif module_asc is False:
+        order = [(ilex, lambda x: x[0])]
+    for expr in arg:
+        name = expr[0]
+        var = expr[1:]
+        def makelambda(var):
+            def lamda(x):
+                return tuple(x[gens2idx[g]] for g in var)
+            return lamda
+        order.append((monomial_key(name), makelambda(var)))
+    return ProductOrder(*order)
+
 @cythonized("a,b")
 def monomial_mul(A, B):
     """
