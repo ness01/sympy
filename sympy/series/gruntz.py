@@ -502,9 +502,11 @@ def calculate_series(e, x, skip_abs=False, logx=None):
 
     This is a place that fails most often, so it is in its own function.
     """
-
+    from sympy.integrals.meijerint import _exponents
+    m = max(abs(t) for t in _exponents(e, x).union([1]))
+    
     f = e
-    for n in [1, 2, 4, 6, 8, 16]:
+    for n in [1, m, 2*m, 4*m, 6*m, 8*m, 16*m]:
         series = f.nseries(x, n=n, logx=logx)
         if not series.has(O):
             # The series expansion is locally exact.

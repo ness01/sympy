@@ -845,10 +845,11 @@ class Pow(Expr):
             nuse = n - ei
             lt = b.compute_leading_term(x, logx=logx) # arg = sin(x); lt = x
             #  XXX o is not used -- was this to be used as o and o2 below to compute a new e?
-            o = order*lt**(1 - e)
+            #o = order*lt**(1 - e)
             bs = b._eval_nseries(x, n=nuse, logx=logx)
-            if bs.is_Add:
-                bs = bs.removeO()
+            if not bs.getO():
+                return bs**e
+            bs = bs.removeO()
             if bs.is_Add:
                 # bs -> lt + rest -> lt*(1 + (bs/lt - 1))
                 return ((Pow(lt, e)*
