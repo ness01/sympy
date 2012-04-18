@@ -1544,6 +1544,78 @@ class PrettyPrinter(Printer):
             ' %s> ' % hobj('-', 2), self._print(h.codomain)))
         return pform
 
+    def _print_ChainComplexFormat(self, h):
+        from sympy.polys.agca.modules import FreeModule
+        # figure out number of columns to use
+        if self._settings["num_columns"] is not None:
+            ncols = self._settings["num_columns"]
+        else:
+            ncols = self._print('foo').terminal_width()
+        ncols -= 2
+        if ncols <= 0:
+            ncols = 78
+
+        cplx = h.chaincomplex
+
+        def print_module(i):
+            M = cplx.M(i)
+            if M.is_zero():
+                pict = self._print(0)
+            elif h.name and isinstance(M, FreeModule) and M.ring == cplx.ring:
+                pict = self._print(h.name)**self._print(M.rank)
+            else:
+                pict = self._print(M)
+            if h.degrees:
+                return prettyForm(*pict.below('', self._print(i)))
+            return pict
+
+        def print_hom(i):
+            if not h.differentials:
+                return self._print(' <%s ' % hobj('-', 2))
+            if cplx.d(i).is_zero():
+                matrix = self._print(0)
+            else:
+                matrix = self._print(cplx.d(i)._sympy_matrix())
+                matrix = prettyForm(*matrix.below(''))
+            L = max(2, matrix.width())
+            p = prettyForm(*matrix.below(' <%s ' % hobj('-', L)))
+            p.baseline = p.height() - 1
+            return p
+
+        # dots on the right
+        addon = self._print(' <%s ...' % hobj('-', 2))
+        if h.dotsright:
+            ncols -= addon.width()
+
+        pform = print_module(h.start)
+        if h.dotsleft:
+            pform = prettyForm(*pform.left('... <%s ' % hobj('-', 2)))
+
+        n = h.terms
+        if n is None:
+            n = 10
+        for i in range(1, n):
+            nex = prettyForm(*pform.right(print_hom(h.start + i),
+                                          print_module(h.start + i)))
+            if nex.width() > ncols:
+                break
+            pform = nex
+
+        if h.dotsright:
+            pform = prettyForm(*pform.right(addon))
+        if h.name:
+            name = prettyForm(*self._print(h.name).right(" = ",
+                                            self._print(cplx.ring)))
+            name = prettyForm(*name.parens())
+            # below has no align attribute ...
+            name = prettyForm(*name.right(' '*(pform.width() - name.width())))
+            pform = prettyForm(*pform.below('', name))
+        return pform
+
+    def _print_ChainComplex(self, c):
+        return self._print(c.format_compact())
+
+
 def pretty(expr, **settings):
     """Returns a string containing the prettified form of expr.
 

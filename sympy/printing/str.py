@@ -540,6 +540,31 @@ class StrPrinter(Printer):
     def _print_Category(self, category):
         return 'Category("%s")' % category.name
 
+    def _print_ChainComplex(self, c):
+        return self._print(c.format_compact())
+
+    def _print_ChainComplexFormat(self, h):
+        from sympy.polys.agca.modules import FreeModule
+        def printM(i):
+            M = cplx.M(i)
+            if M.is_zero():
+                return "0"
+            if isinstance(M, FreeModule) and h.name is not None:
+                return "%s**%s" % (h.name, M.rank)
+            return self._print(M)
+        cplx = h.chaincomplex
+        res = ""
+        if h.dotsleft:
+            res += "... <--"
+        res += " %s" % printM(h.start)
+        n = h.terms
+        if n is None:
+            n = 10
+        for i in range(1, n):
+            res += " <-- %s" % printM(h.start + i)
+        if h.dotsright:
+            res += " <-- ..."
+        return res
 
 def sstr(expr, **settings):
     """Returns the expression as a string.
